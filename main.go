@@ -29,7 +29,7 @@ func main() {
 
 	go produceMessages(messages)
 
-	sendMessage(botApi, chatId, messages)
+	listenToMessages(botApi, chatId, messages)
 }
 
 func loadEnvVariables() {
@@ -57,15 +57,19 @@ func produceMessages(messages chan<- string) {
 	}
 }
 
-func sendMessage(botApi *tgbotapi.BotAPI, chatId int64, messages <-chan string) {
+func listenToMessages(botApi *tgbotapi.BotAPI, chatId int64, messages <-chan string) {
 	for messageText := range messages {
 		fmt.Println("Sending:", messageText)
 
-		message := tgbotapi.NewMessage(chatId, "Message: "+messageText)
-		_, err := botApi.Send(message)
+		sendMessage(botApi, chatId, "Message: "+messageText)
+	}
+}
 
-		if err != nil {
-			log.Fatal("message was not send", err)
-		}
+func sendMessage(botApi *tgbotapi.BotAPI, chatId int64, messageText string) {
+	message := tgbotapi.NewMessage(chatId, "Message: "+messageText)
+	_, err := botApi.Send(message)
+
+	if err != nil {
+		log.Fatal("message was not send", err)
 	}
 }
