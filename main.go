@@ -11,26 +11,36 @@ import (
 const BotToken = "BOT_TOKEN"
 
 func main() {
-	err := godotenv.Load(".env")
-	c := make(chan string, 1)
-
-	if err != nil {
-		log.Fatal("oh my god")
-	}
+	loadEnvVariables()
 
 	botToken := os.Getenv(BotToken)
+	botApi := createBotApiClient(botToken)
 
-	_, err = tgbotapi.NewBotAPI(botToken)
+	c := make(chan string, 1)
 
-	if err != nil {
-		log.Fatal("oh my god")
-	}
-
-	c <- botToken
+	c <- botApi.Token
 
 	for {
 		go start(c)
 	}
+}
+
+func loadEnvVariables() {
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatal("oh my god")
+	}
+}
+
+func createBotApiClient(botToken string) *tgbotapi.BotAPI {
+	botApi, err := tgbotapi.NewBotAPI(botToken)
+
+	if err != nil {
+		log.Fatal("oh my god")
+	}
+
+	return botApi
 }
 
 func start(c <-chan string) {
