@@ -6,23 +6,30 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"strconv"
 )
 
 const BotToken = "BOT_TOKEN"
+const ChatId = "CHAT_ID"
 
 func main() {
 	loadEnvVariables()
 
 	botToken := os.Getenv(BotToken)
+	chatIdString := os.Getenv(ChatId)
+	chatId, err := strconv.ParseInt(chatIdString, 10, 64)
+
+	if err != nil {
+		log.Fatal("wrong chat ID")
+	}
+
 	botApi := createBotApiClient(botToken)
 
-	c := make(chan string, 1)
+	messages := make(chan string)
 
-	c <- botApi.Token
+	go produceMessages(messages)
 
-	for {
-		go start(c)
-	}
+	sendMessage(botApi, chatId, messages)
 }
 
 func loadEnvVariables() {
@@ -43,6 +50,22 @@ func createBotApiClient(botToken string) *tgbotapi.BotAPI {
 	return botApi
 }
 
-func start(c <-chan string) {
-	fmt.Println(<-c)
+func produceMessages(messages chan<- string) {
+	for _, v := range []string{"1", "2", "3", "4", "5"} {
+		fmt.Println("Produced:", v)
+		messages <- v
+	}
+}
+
+func sendMessage(botApi *tgbotapi.BotAPI, chatId int64, messages <-chan string) {
+	for messageText := range messages {
+		fmt.Println("Sending:", messageText)
+
+		message := tgbotapi.NewMessage(chatId, "Message: "+messageText)
+		_, err := botApi.Send(message)
+
+		if err != nil {
+			log.Fatal("message was not send", err)
+		}
+	}
 }
