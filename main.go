@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/joho/godotenv"
 	"log"
+	"notifier/notifier"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 const BotToken = "BOT_TOKEN"
@@ -16,38 +17,20 @@ func main() {
 	loadEnvVariables()
 
 	botToken := os.Getenv(BotToken)
-	chatIdString := os.Getenv(ChatId)
-	chatId, err := strconv.ParseInt(chatIdString, 10, 64)
+	chatIDString := os.Getenv(ChatId)
+	chatID, err := strconv.ParseInt(chatIDString, 10, 64)
 
 	if err != nil {
 		log.Fatal("wrong chat ID")
 	}
 
-	botApi := createBotApiClient(botToken)
+	notifier := notifier.MakeNotifier(botToken)
 
 	messages := make(chan string)
 
 	go produceMessages(messages)
 
-	listenToMessages(botApi, chatId, messages)
-}
-
-func loadEnvVariables() {
-	err := godotenv.Load(".env")
-
-	if err != nil {
-		log.Fatal("oh my god")
-	}
-}
-
-func createBotApiClient(botToken string) *tgbotapi.BotAPI {
-	botApi, err := tgbotapi.NewBotAPI(botToken)
-
-	if err != nil {
-		log.Fatal("oh my god")
-	}
-
-	return botApi
+	notifier.Listen(chatID, messages)
 }
 
 func produceMessages(messages chan<- string) {
@@ -57,19 +40,10 @@ func produceMessages(messages chan<- string) {
 	}
 }
 
-func listenToMessages(botApi *tgbotapi.BotAPI, chatId int64, messages <-chan string) {
-	for messageText := range messages {
-		fmt.Println("Sending:", messageText)
-
-		sendMessage(botApi, chatId, "Message: "+messageText)
-	}
-}
-
-func sendMessage(botApi *tgbotapi.BotAPI, chatId int64, messageText string) {
-	message := tgbotapi.NewMessage(chatId, "Message: "+messageText)
-	_, err := botApi.Send(message)
+func loadEnvVariables() {
+	err := godotenv.Load(".env")
 
 	if err != nil {
-		log.Fatal("message was not send", err)
+		log.Fatal("oh my god")
 	}
 }
